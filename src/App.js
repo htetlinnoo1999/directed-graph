@@ -2,7 +2,11 @@ import {
   Box,
   Button,
   Card,
+  FormControl,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -16,17 +20,43 @@ import SearchIcon from "@mui/icons-material/Search";
 import "./App.css";
 import { useState } from "react";
 import { Triangle } from "react-loader-spinner";
-import { CalculateRouteCost } from "./RouteFinder";
+import { CalculateRouteCost, FindAllPaths } from "./RouteFinder";
+import Toast from "./Components/toast";
 
 function App() {
   const [formData, setFormData] = useState("");
+  const [max, setMax] = useState(10);
+  const [toast, setToast] = useState({
+    open: false,
+    message: "",
+    severity: "error",
+  });
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const nodeLimit = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-  const handleSearchRoute = async () => {
+  const handleSearchRoute = async (key) => {
     setLoading(true);
-    const data = await CalculateRouteCost(formData);
-    setRoutes(data);
+    let data;
+    if (key === "cost") {
+      data = await CalculateRouteCost(formData);
+    } else {
+      data = await FindAllPaths(formData, max);
+    }
+    if (typeof data !== "object") {
+      setToast({
+        open: true,
+        message: data,
+        severity: "error",
+      });
+    } else {
+      setRoutes(data);
+      setToast({
+        open: true,
+        message: "Process completed successfully.",
+        severity: "success",
+      });
+    }
     setLoading(false);
   };
 
@@ -56,19 +86,19 @@ function App() {
             <TableRow>
               <TableCell colSpan={2}>Routes</TableCell>
               <TableCell />
-              <TableCell>Cost</TableCell>
+              <TableCell>{routes.cost ? "Cost" : "Path Count"}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             <TableRow>
-              {routes.route ? (
+              {typeof routes === "object" && (
                 <>
                   <TableCell colSpan={2}>{routes.route}</TableCell>
                   <TableCell />
-                  <TableCell>{routes.cost}</TableCell>
+                  <TableCell>
+                    {routes.cost ? routes.cost : routes.totalPaths}
+                  </TableCell>
                 </>
-              ) : (
-                <TableCell colSpan={3}>{routes}</TableCell>
               )}
             </TableRow>
           </TableBody>
@@ -78,8 +108,9 @@ function App() {
   };
   return (
     <div className="App">
+      <Toast toast={toast} setToast={setToast} />
       <Card className="Input-card">
-        <Box className="Input-container" sx={{ width: "70%" }}>
+        <Box className="Input-container" sx={{ width: "60%" }}>
           <Typography component="div" sx={{ pr: 3 }} variant="h5">
             Enter delivery route :
           </Typography>
@@ -90,24 +121,45 @@ function App() {
           />
         </Box>
 
-        {/* <Box className="Input-container">
-          <Typography component="div" sx={{ pr: 3 }} variant="h5">
-            To :
-          </Typography>
-          <TextField
-            name="to"
-            value={formData.to}
-            onChange={(e) => handleChange(e)}
-          />
-        </Box> */}
-        <Box sx={{ paddingTop: 4 }}>
+        <Box sx={{ width: "10%" }} className="Input-container">
+          <FormControl fullWidth>
+            <InputLabel id="demo-simple-select-label">Max</InputLabel>
+            <Select
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              value={max}
+              label="Age"
+              onChange={(e) => setMax(e.target.value)}
+            >
+              {nodeLimit.map((limit) => (
+                <MenuItem value={limit}>{limit}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
           <Button
             variant="outlined"
             color="success"
             endIcon={<SearchIcon />}
-            onClick={handleSearchRoute}
+            onClick={() => handleSearchRoute("cost")}
           >
-            Search
+            Find Cost
+          </Button>
+
+          <Button
+            sx={{ marginTop: 1 }}
+            variant="outlined"
+            endIcon={<SearchIcon />}
+            onClick={() => handleSearchRoute("path")}
+          >
+            Find Paths
           </Button>
         </Box>
       </Card>
