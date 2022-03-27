@@ -9,7 +9,7 @@
   display: flex;
   width: 60%;
   margin-top: 7%;
-  justify-content: center;
+  justify-content: space-around;
 }
 
 .Input-container {
